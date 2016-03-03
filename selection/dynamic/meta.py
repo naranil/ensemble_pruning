@@ -67,7 +67,7 @@ class IbepMlc(BaseDynamic, ClassifierMixin):
 		ml_knn = self.mlknn()
 		best_pool_idx = ml_knn.predict(x_test.reshape(1, -1))
 		best_pool = pool[best_pool_idx.astype(bool)[0]]
-		print "Best pool size %s" % len(best_pool)
+		# print "Best pool size %s" % len(best_pool)
 		return best_pool
 
 	def predict(self, X_test):
