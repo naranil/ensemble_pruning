@@ -8,15 +8,19 @@ from __future__ import division
 
 import numpy as np
 
+from abc import ABCMeta
+
+from sklearn.externals.six import with_metaclass
 from sklearn.ensemble import BaggingClassifier
 from sklearn.neighbors import NearestNeighbors
+from sklearn.ensemble.base import BaseEnsemble
 
 from sklearn.cross_validation import train_test_split
 from sklearn.metrics import accuracy_score
 
 from sklearn.datasets import make_classification
 
-class OLA:
+class OLA(with_metaclass(ABCMeta, BaseEnsemble)):
 	"""
 	Desc
 	"""
@@ -29,6 +33,12 @@ class OLA:
 		self.knn = knn
 		self.X_val = X_val
 		self.y_val = y_val
+
+	def fit(self, X, y):
+		clf = self.ensemble_clf
+		clf.fit(X, y)
+		self.ensemble_clf = clf
+		return self
 
 	def select(self, x_test, metric='minkowski', p=2):
 		"""
@@ -57,7 +67,7 @@ class OLA:
 			knn = NearestNeighbors(n_neighbors=self.knn, metric=metric, p=p)
 			knn.fit(self.X_val)
 			iknn = knn.kneighbors(x_test.reshape(1, -1), return_distance=False)[0]
-			X_knn, y_knn = X_val[iknn], y_val[iknn]
+			X_knn, y_knn = self.X_val[iknn], self.y_val[iknn]
 
 			accuracies = [accuracy_score(clf.predict(X_knn), y_knn) \
 						  for clf in pool]
@@ -65,7 +75,7 @@ class OLA:
 
 			return pool[i_best]
 
-	def predict(self, X_test):
+	def predict(self, X):
 		"""Predict class for test data
 		Parameters
 		----------
@@ -76,8 +86,7 @@ class OLA:
 		y : array of shape = [n_samples]
 		The predicted classes.
 		"""		
-		y_pred = [self.select(x_test).predict(x_test.reshape(1, -1))[0] \
-				  for x_test in X_test]
+		y_pred = [self.select(x).predict(x.reshape(1, -1))[0] for x in X]
 		return y_pred
 
 class LCA:
@@ -93,6 +102,12 @@ class LCA:
 		self.knn = knn
 		self.X_val = X_val
 		self.y_val = y_val
+
+	def fit(self, X, y): # Make an option: no need to fit if algo already fitted
+		clf = self.ensemble_clf
+		clf.fit(X, y)
+		self.ensemble_clf = clf
+		return self
 
 	def select(self, x_test, metric='minkowski', p=2):
 		"""
@@ -134,7 +149,7 @@ class LCA:
 				knn = NearestNeighbors(n_neighbors=self.knn, metric=metric, p=p)
 				knn.fit(X_lca)
 				iknn = knn.kneighbors(x_test.reshape(1, -1), return_distance=False)[0]
-				X_knn = X_val[iknn]
+				X_knn = X_lca[iknn]
 
 				accuracy = sum(clf.predict(X_knn) == output) / len(output)
 
@@ -172,10 +187,15 @@ if __name__ == '__main__':
 	                                   , test_size=0.2)
 	
 	bag = BaggingClassifier(n_estimators=50)
-	bag.fit(X_train, y_train)
-
 	ola = OLA(bag, 6, X_val, y_val)
 	lca = LCA(bag, 6, X_val, y_val)
+
+	bag.fit(X_train, y_train)
+	ola.fit(X_train, y_train)
+	lca.fit(X_train, y_train)
+
+	#lca.fit(X_train, y_train)
+	#print lca.predict(X_test)
 	
 	acc_ola = []
 	acc_lca = []
