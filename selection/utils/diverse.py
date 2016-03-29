@@ -9,6 +9,10 @@ from sklearn.ensemble import BaggingClassifier
 from sklearn.datasets import make_classification
 from sklearn.cross_validation import train_test_split
 
+def rms_score(y_true, y_prob):
+	# 1-RMS score function
+    return 1 - np.sqrt(np.average((y_true-y_prob)**2))
+
 def output_profile(pool, X, y):
     """The output profile of a pool of classifier on a certain dataset (X, y)
     Parameters
